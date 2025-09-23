@@ -8,7 +8,11 @@
 import SwiftUI
 
 @available(iOS 13.0, macOS 10.15, *)
-public enum Refresh {}
+public enum Refresh {
+    enum RefreshState {
+        case idle, refreshing, noMoreData
+    }
+}
 
 @available(iOS 13.0, macOS 10.15, *)
 public typealias RefreshHeader = Refresh.Header

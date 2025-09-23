@@ -6,6 +6,7 @@
 //  https://github.com/wxxsw/Refresh
 
 import SwiftUI
+import SwiftUIIntrospect
 
 @available(iOS 13.0, macOS 10.15, *)
 extension Refresh {
@@ -13,10 +14,13 @@ extension Refresh {
     struct Modifier {
         let isEnabled: Bool
         
+        @State private var isDragging: Bool = false
+        
+        @State private var observer: Coordinator?
+        
         @State private var id: Int = 0
         @State private var headerUpdate: HeaderUpdateKey.Value
         @State private var headerPadding: CGFloat = 0
-        @State private var headerPreviousProgress: CGFloat = 0
         
         @State private var footerUpdate: FooterUpdateKey.Value
         @State private var footerPreviousRefreshAt: Date?
@@ -50,20 +54,30 @@ extension Refresh.Modifier: ViewModifier {
                     return Color.clear
                 }
                 .id(self.id)
+            
+                .introspect(.scrollView, on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18, .v26), customize: { scrollView in
+                    scrollView.delegate = observer
+                })
+                .onAppear() {
+                    observer = Coordinator(isDragging: $isDragging)
+                }
         }
     }
     
     func update(proxy: GeometryProxy, value: Refresh.HeaderAnchorKey.Value) {
         guard let item = value.first else { return }
-        guard !footerUpdate.refresh else { return }
+        guard footerUpdate.state != .refreshing else { return }
         
         let bounds = proxy[item.bounds]
         var update = headerUpdate
         
         update.progress = max(0, (bounds.maxY) / bounds.height)
         
-        if update.refresh != item.refreshing {
-            update.refresh = item.refreshing
+        update.isReadyRefresh = update.state == .refreshing || update.progress > 1.01
+        
+        if (update.state == .refreshing && !item.refreshing) ||
+            (update.state != .refreshing && item.refreshing) {
+            update.state = item.refreshing ? .refreshing : .idle
             
             if !item.refreshing {
                 id += 1
@@ -72,12 +86,11 @@ extension Refresh.Modifier: ViewModifier {
                 }
             }
         } else {
-            update.refresh = update.refresh || (headerPreviousProgress > 1 && update.progress < headerPreviousProgress && update.progress >= 1)
+            update.state = (update.state == .refreshing || (!isDragging && update.progress > 1.01)) ? .refreshing : .idle
         }
         
         headerUpdate = update
-        headerPadding = headerUpdate.refresh ? 0 : -max(rowHeight, bounds.height)
-        headerPreviousProgress = update.progress
+        headerPadding = headerUpdate.state == .refreshing ? 0 : -max(rowHeight, bounds.height)
     }
     
     func update(proxy: GeometryProxy, value: Refresh.FooterAnchorKey.Value) {
@@ -87,21 +100,42 @@ extension Refresh.Modifier: ViewModifier {
         let bounds = proxy[item.bounds]
         var update = footerUpdate
         
-        if bounds.minY <= rowHeight || bounds.minY <= bounds.height {
-            update.refresh = false
-        } else if update.refresh && !item.refreshing {
-            update.refresh = false
-        } else {
-            update.refresh = proxy.size.height - bounds.minY + item.preloadOffset > 0
+        if item.noMoreData {
+            update.state = .noMoreData
         }
-        
-        if update.refresh, !footerUpdate.refresh {
-            if let date = footerPreviousRefreshAt, Date().timeIntervalSince(date) < 0.1 {
-                update.refresh = false
+        else {
+            if bounds.minY <= rowHeight || bounds.minY <= bounds.height {
+                update.state = .idle
+            } else if update.state == .refreshing && !item.refreshing {
+                update.state = .idle
+            } else {
+                update.state = (!isDragging && (proxy.size.height - bounds.minY + item.preloadOffset > 0)) ? .refreshing : .idle
             }
-            footerPreviousRefreshAt = Date()
+            
+            if update.state == .refreshing, footerUpdate.state != .refreshing {
+                if let date = footerPreviousRefreshAt, Date().timeIntervalSince(date) < 0.1 {
+                    update.state = .idle
+                }
+                footerPreviousRefreshAt = Date()
+            }
         }
         
         footerUpdate = update
+    }
+}
+
+class Coordinator: NSObject, UIScrollViewDelegate {
+    @Binding var isDragging: Bool
+    
+    init(isDragging: Binding<Bool>) {
+        _isDragging = isDragging
+    }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        isDragging = true
+    }
+    
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        isDragging = false
     }
 }

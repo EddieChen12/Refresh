@@ -50,7 +50,7 @@ extension Refresh.Footer {
 extension Refresh.Footer: View {
     
     public var body: some View {
-        if !noMore, update.refresh, !refreshing {
+        if !noMore, update.state == .refreshing, !refreshing {
             DispatchQueue.main.async {
                 self.refreshing = true
                 self.action()
@@ -60,11 +60,7 @@ extension Refresh.Footer: View {
         return Group {
             if update.enable {
                 VStack(alignment: .center, spacing: 0) {
-                    if refreshing || noMore {
-                        label()
-                    } else {
-                        EmptyView()
-                    }
+                    label()
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -77,7 +73,7 @@ extension Refresh.Footer: View {
             if self.noMore || self.refreshing {
                 return []
             } else {
-                return [.init(bounds: $0, preloadOffset: self.preloadOffset, refreshing: self.refreshing)]
+                return [.init(bounds: $0, preloadOffset: self.preloadOffset, refreshing: self.refreshing, noMoreData: self.noMore)]
             }
         }
     }

@@ -37,6 +37,7 @@ extension Refresh.FooterAnchorKey: PreferenceKey {
         let bounds: Anchor<CGRect>
         let preloadOffset: CGFloat
         let refreshing: Bool
+        let noMoreData: Bool
     }
     
     static func reduce(value: inout Value, nextValue: () -> Value) {
@@ -49,6 +50,6 @@ extension Refresh.FooterUpdateKey: EnvironmentKey {
     
     struct Value: Equatable {
         let enable: Bool
-        var refresh: Bool = false
+        var state: Refresh.RefreshState = .idle
     }
 }

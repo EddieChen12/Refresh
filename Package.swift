@@ -13,6 +13,9 @@ let package = Package(
             name: "Refresh",
             targets: ["Refresh"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/siteline/swiftui-introspect.git", from: "26.0.0")
+    ],
     targets: [
         .target(
             name: "Refresh",

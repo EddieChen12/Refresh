@@ -13,11 +13,11 @@ extension Refresh {
     public struct Header<Label> where Label: View {
         
         let action: () -> Void
-        let label: (CGFloat) -> Label
+        let label: (CGFloat, Bool) -> Label
         
         @Binding var refreshing: Bool
 
-        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping (CGFloat) -> Label) {
+        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping (CGFloat, Bool) -> Label) {
             self.action = action
             self.label = label
             self._refreshing = refreshing
@@ -31,7 +31,7 @@ extension Refresh {
 extension Refresh.Header: View {
     
     public var body: some View {
-        if update.refresh, !refreshing, update.progress > 1.01 {
+        if update.state == .refreshing, !refreshing, update.progress > 1.01 {
             DispatchQueue.main.async {
                 self.refreshing = true
                 self.action()
@@ -42,7 +42,7 @@ extension Refresh.Header: View {
             if update.enable {
                 VStack(alignment: .center, spacing: 0) {
                     Spacer()
-                    label(update.progress)
+                    label(update.progress, update.isReadyRefresh)
                         .opacity(opacity)
                 }
                 .frame(maxWidth: .infinity)
@@ -57,6 +57,6 @@ extension Refresh.Header: View {
     }
     
     var opacity: Double {
-        (!refreshing && update.refresh) || (update.progress == 0) ? 0 : 1
+        (!refreshing && update.state == .refreshing) || (update.progress == 0) ? 0 : 1
     }
 }

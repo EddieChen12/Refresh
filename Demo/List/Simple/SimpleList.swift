@@ -26,7 +26,7 @@ struct SimpleList: View {
             if items.count > 0 {
                 RefreshHeader(refreshing: $headerRefreshing, action: {
                     self.reload()
-                }) { progress in
+                }) { progress, isReadyRefresh in
                     if self.headerRefreshing {
                         SimpleRefreshingView()
                     } else {
@@ -43,12 +43,19 @@ struct SimpleList: View {
                 RefreshFooter(refreshing: $footerRefreshing, action: {
                     self.loadMore()
                 }) {
-                    if self.noMore {
-                        Text("No more data !")
+                    if self.footerRefreshing {
+                        if self.noMore {
+                            Text("No more data !")
+                                .foregroundColor(.secondary)
+                                .padding()
+                        } else {
+                            SimpleRefreshingView()
+                                .padding()
+                        }
+                    }
+                    else {
+                        Text("Pull up to Refresh")
                             .foregroundColor(.secondary)
-                            .padding()
-                    } else {
-                        SimpleRefreshingView()
                             .padding()
                     }
                 }
