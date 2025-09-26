@@ -10,7 +10,7 @@ import SwiftUI
 @available(iOS 13.0, macOS 10.15, *)
 extension ScrollView {
     
-    public func enableRefresh(_ enable: Bool = true) -> some View {
-        modifier(Refresh.Modifier(enable: enable))
+    public func enableRefresh(isEnableHeader: Bool = true, isEnableFooter: Bool = true) -> some View {
+        modifier(Refresh.Modifier(isEnableHeader: isEnableHeader, isEnableFooter: isEnableFooter))
     }
 }

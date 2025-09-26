@@ -12,8 +12,6 @@ import SwiftUIIntrospect
 extension Refresh {
     
     struct Modifier {
-        let isEnabled: Bool
-        
         @State private var isDragging: Bool = false
         
         @State private var observer: Coordinator?
@@ -25,10 +23,9 @@ extension Refresh {
         @State private var footerUpdate: FooterUpdateKey.Value
         @State private var footerPreviousRefreshAt: Date?
         
-        init(enable: Bool) {
-            isEnabled = enable
-            _headerUpdate = State(initialValue: .init(enable: enable))
-            _footerUpdate = State(initialValue: .init(enable: enable))
+        init(isEnableHeader: Bool, isEnableFooter: Bool) {
+            _headerUpdate = State(initialValue: .init(enable: isEnableHeader))
+            _footerUpdate = State(initialValue: .init(enable: isEnableFooter))
         }
         
         @Environment(\.defaultMinListRowHeight) var rowHeight
