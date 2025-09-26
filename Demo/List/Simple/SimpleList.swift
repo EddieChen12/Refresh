@@ -27,10 +27,13 @@ struct SimpleList: View {
                 RefreshHeader(refreshing: $headerRefreshing, action: {
                     self.reload()
                 }) { state, progress in
-                    if state == .refreshing {
+                    switch state {
+                    case .readyRefresh:
+                        Text("ready to refresh")
+                    case .refreshing:
                         SimpleRefreshingView()
-                    } else {
-                        SimplePullToRefreshView(progress: progress)
+                    default:
+                        Text("pull down to refresh")
                     }
                 }
             }
@@ -43,24 +46,22 @@ struct SimpleList: View {
                 RefreshFooter(refreshing: $footerRefreshing, action: {
                     self.loadMore()
                 }) { state, isNoMoreData in
-                    if state == .refreshing {
-                        if self.noMore {
-                            Text("No more data !")
-                                .foregroundColor(.secondary)
-                                .padding()
-                        } else {
-                            SimpleRefreshingView()
-                                .padding()
-                        }
+                    if isNoMoreData {
+                        Text("no more data !")
                     }
                     else {
-                        Text("Pull up to Refresh")
-                            .foregroundColor(.secondary)
-                            .padding()
+                        switch state {
+                        case .readyRefresh:
+                            Text("ready to refresh")
+                        case .refreshing:
+                            SimpleRefreshingView()
+                        default:
+                            Text("pull up to Refresh")
+                        }
                     }
                 }
                 .noMore(noMore)
-                .preload(offset: 50)
+//                .preload(offset: 50)
             }
         }
         .enableRefresh()

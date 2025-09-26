@@ -106,7 +106,8 @@ extension Refresh.Modifier: ViewModifier {
             } else if update.state == .refreshing && !item.refreshing {
                 update.state = .idle
             } else {
-                let state: RefreshState = (proxy.size.height - bounds.minY + item.preloadOffset > 0) ? .readyRefresh : .idle
+                let preloadOffset = item.preloadOffset > 0 ? item.preloadOffset : -bounds.height
+                let state: RefreshState = (proxy.size.height - bounds.minY + preloadOffset > 0) ? .readyRefresh : .idle
                 update.state = (!isDragging && state == .readyRefresh) ? .refreshing : state
             }
             
