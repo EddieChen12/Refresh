@@ -13,11 +13,11 @@ extension Refresh {
     public struct Header<Label> where Label: View {
         
         let action: () -> Void
-        let label: (CGFloat, Bool) -> Label
+        let label: (RefreshState, CGFloat) -> Label
         
         @Binding var refreshing: Bool
 
-        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping (CGFloat, Bool) -> Label) {
+        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping (RefreshState, CGFloat) -> Label) {
             self.action = action
             self.label = label
             self._refreshing = refreshing
@@ -42,7 +42,7 @@ extension Refresh.Header: View {
             if update.enable {
                 VStack(alignment: .center, spacing: 0) {
                     Spacer()
-                    label(update.progress, update.isReadyRefresh)
+                    label(update.state, update.progress)
                         .opacity(opacity)
                 }
                 .frame(maxWidth: .infinity)

@@ -70,11 +70,11 @@ extension Refresh.Modifier: ViewModifier {
         
         update.progress = max(0, (bounds.maxY) / bounds.height)
         
-        update.isReadyRefresh = update.state == .refreshing || update.progress > 1.01
+        let state: RefreshState = update.progress > 1.01 ? .readyRefresh : .idle
         
         if (update.state == .refreshing && !item.refreshing) ||
             (update.state != .refreshing && item.refreshing) {
-            update.state = item.refreshing ? .refreshing : .idle
+            update.state = item.refreshing ? .refreshing : state
             
             if !item.refreshing {
                 id += 1
@@ -83,7 +83,7 @@ extension Refresh.Modifier: ViewModifier {
                 }
             }
         } else {
-            update.state = (update.state == .refreshing || (!isDragging && update.progress > 1.01)) ? .refreshing : .idle
+            update.state = (update.state == .refreshing || (!isDragging && state == .readyRefresh)) ? .refreshing : state
         }
         
         headerUpdate = update
@@ -106,7 +106,8 @@ extension Refresh.Modifier: ViewModifier {
             } else if update.state == .refreshing && !item.refreshing {
                 update.state = .idle
             } else {
-                update.state = (!isDragging && (proxy.size.height - bounds.minY + item.preloadOffset > 0)) ? .refreshing : .idle
+                let state: RefreshState = (proxy.size.height - bounds.minY + item.preloadOffset > 0) ? .readyRefresh : .idle
+                update.state = (!isDragging && state == .readyRefresh) ? .refreshing : state
             }
             
             if update.state == .refreshing, footerUpdate.state != .refreshing {

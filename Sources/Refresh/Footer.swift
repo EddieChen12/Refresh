@@ -13,14 +13,14 @@ extension Refresh {
     public struct Footer<Label> where Label: View {
         
         let action: () -> Void
-        let label: () -> Label
+        let label: (RefreshState, Bool) -> Label
         
         @Binding var refreshing: Bool
         
         private var noMore: Bool = false
         private var preloadOffset: CGFloat = 0
 
-        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping () -> Label) {
+        public init(refreshing: Binding<Bool>, action: @escaping () -> Void, @ViewBuilder label: @escaping (RefreshState, Bool) -> Label) {
             self.action = action
             self.label = label
             self._refreshing = refreshing
@@ -60,7 +60,7 @@ extension Refresh.Footer: View {
         return Group {
             if update.enable {
                 VStack(alignment: .center, spacing: 0) {
-                    label()
+                    label(update.state, self.noMore)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)

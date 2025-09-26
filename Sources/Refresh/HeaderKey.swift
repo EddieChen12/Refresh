@@ -49,7 +49,6 @@ extension Refresh.HeaderUpdateKey: EnvironmentKey {
     struct Value {
         let enable: Bool
         var progress: CGFloat = 0
-        var isReadyRefresh: Bool = false
-        var state: Refresh.RefreshState = .idle
+        var state: RefreshState = .idle
     }
 }

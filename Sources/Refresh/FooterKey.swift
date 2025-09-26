@@ -50,6 +50,6 @@ extension Refresh.FooterUpdateKey: EnvironmentKey {
     
     struct Value: Equatable {
         let enable: Bool
-        var state: Refresh.RefreshState = .idle
+        var state: RefreshState = .idle
     }
 }
