@@ -12,6 +12,7 @@ import SwiftUIIntrospect
 extension Refresh {
     
     struct Modifier {
+        @State private var isEnabledRefresh: Bool = false
         @State private var isDragging: Bool = false
         
         @State private var observer: Coordinator?
@@ -56,7 +57,7 @@ extension Refresh.Modifier: ViewModifier {
                     scrollView.delegate = observer
                 })
                 .onAppear() {
-                    observer = Coordinator(isDragging: $isDragging)
+                    observer = Coordinator(isEnabledRefresh: $isEnabledRefresh, isDragging: $isDragging)
                 }
         }
     }
@@ -70,20 +71,26 @@ extension Refresh.Modifier: ViewModifier {
         
         update.progress = max(0, (bounds.maxY) / bounds.height)
         
-        let state: RefreshState = update.progress > 1.01 ? .readyRefresh : .idle
-        
-        if (update.state == .refreshing && !item.refreshing) ||
-            (update.state != .refreshing && item.refreshing) {
-            update.state = item.refreshing ? .refreshing : state
+        if isEnabledRefresh {
+            let state: RefreshState = update.progress > 1.01 ? .readyRefresh : .idle
             
-            if !item.refreshing {
-                id += 1
-                DispatchQueue.main.async {
-                    self.headerUpdate.progress = 0
+            if (update.state == .refreshing && !item.refreshing) ||
+                (update.state != .refreshing && item.refreshing) {
+                update.state = item.refreshing ? .refreshing : state
+                
+                if !item.refreshing {
+                    id += 1
+                    DispatchQueue.main.async {
+                        self.headerUpdate.progress = 0
+                    }
+                }
+            } else {
+                update.state = (update.state == .refreshing || (!isDragging && state == .readyRefresh)) ? .refreshing : state
+                
+                if update.state == .refreshing {
+                    isEnabledRefresh = false
                 }
             }
-        } else {
-            update.state = (update.state == .refreshing || (!isDragging && state == .readyRefresh)) ? .refreshing : state
         }
         
         headerUpdate = update
@@ -97,25 +104,29 @@ extension Refresh.Modifier: ViewModifier {
         let bounds = proxy[item.bounds]
         var update = footerUpdate
         
-        if item.noMoreData {
-            update.state = .noMoreData
-        }
-        else {
-            if bounds.minY <= rowHeight || bounds.minY <= bounds.height {
-                update.state = .idle
-            } else if update.state == .refreshing && !item.refreshing {
-                update.state = .idle
-            } else {
-                let preloadOffset = item.preloadOffset > 0 ? item.preloadOffset : -bounds.height
-                let state: RefreshState = (proxy.size.height - bounds.minY + preloadOffset > 0) ? .readyRefresh : .idle
-                update.state = (!isDragging && state == .readyRefresh) ? .refreshing : state
+        if isEnabledRefresh {
+            if item.noMoreData {
+                update.state = .noMoreData
             }
-            
-            if update.state == .refreshing, footerUpdate.state != .refreshing {
-                if let date = footerPreviousRefreshAt, Date().timeIntervalSince(date) < 0.1 {
+            else {
+                if bounds.minY <= rowHeight || bounds.minY <= bounds.height {
                     update.state = .idle
+                } else if update.state == .refreshing && !item.refreshing {
+                    update.state = .idle
+                } else {
+                    let preloadOffset = item.preloadOffset > 0 ? item.preloadOffset : -bounds.height
+                    let state: RefreshState = (proxy.size.height - bounds.minY + preloadOffset > 0) ? .readyRefresh : .idle
+                    update.state = (!isDragging && state == .readyRefresh) ? .refreshing : state
                 }
-                footerPreviousRefreshAt = Date()
+                
+                if update.state == .refreshing, footerUpdate.state != .refreshing {
+                    if let date = footerPreviousRefreshAt, Date().timeIntervalSince(date) < 0.1 {
+                        update.state = .idle
+                    }
+                    footerPreviousRefreshAt = Date()
+                    
+                    isEnabledRefresh = false
+                }
             }
         }
         
@@ -124,13 +135,16 @@ extension Refresh.Modifier: ViewModifier {
 }
 
 class Coordinator: NSObject, UIScrollViewDelegate {
+    @Binding var isEnabledRefresh: Bool
     @Binding var isDragging: Bool
     
-    init(isDragging: Binding<Bool>) {
+    init(isEnabledRefresh: Binding<Bool>, isDragging: Binding<Bool>) {
+        _isEnabledRefresh = isEnabledRefresh
         _isDragging = isDragging
     }
     
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        isEnabledRefresh = true
         isDragging = true
     }
     
